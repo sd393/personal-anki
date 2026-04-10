@@ -1,0 +1,579 @@
+/* ── Reset & Base ─────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #FAF9F6;
+  --surface: #FFFFFF;
+  --text: #1A1A1A;
+  --text-secondary: #6B6B6B;
+  --border: #E5E5E5;
+  --primary: #3B82F6;
+  --primary-hover: #2563EB;
+  --danger: #EF4444;
+  --danger-hover: #DC2626;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1A1A1A;
+    --surface: #2A2A2A;
+    --text: #F0F0F0;
+    --text-secondary: #9A9A9A;
+    --border: #3A3A3A;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
+  }
+}
+
+html {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--bg);
+}
+
+/* ── App Shell ───────────────────────────────────── */
+
+.app {
+  min-height: 100dvh;
+}
+
+.screen {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 16px 100px;
+}
+
+/* ── Header ──────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+.header-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-title-editable {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.header-title-input {
+  font-family: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  flex: 1;
+  min-width: 0;
+  outline: none;
+}
+
+.header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Buttons ─────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.btn-secondary {
+  background: var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 6px 12px;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.btn-icon:hover {
+  background: var(--border);
+}
+
+.btn-danger {
+  color: var(--danger);
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.btn-danger-text {
+  background: transparent;
+  color: var(--danger);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.btn-danger-text:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.btn-review {
+  background: var(--primary);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.btn-play {
+  background: var(--primary);
+  color: #fff;
+  margin-top: 8px;
+}
+
+/* ── Grade Buttons ───────────────────────────────── */
+
+.btn-again {
+  background: #EF4444;
+  color: #fff;
+  flex: 1;
+}
+
+.btn-again:hover { background: #DC2626; }
+
+.btn-good {
+  background: #3B82F6;
+  color: #fff;
+  flex: 1;
+}
+
+.btn-good:hover { background: #2563EB; }
+
+.btn-easy {
+  background: #22C55E;
+  color: #fff;
+  flex: 1;
+}
+
+.btn-easy:hover { background: #16A34A; }
+
+/* ── Deck Grid ───────────────────────────────────── */
+
+.deck-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.deck-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  border-left: 5px solid;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.deck-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+.deck-card-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.deck-card-stats {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.deck-card-due {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ── Card List (in Deck View) ────────────────────── */
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-row {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  box-shadow: var(--shadow);
+  gap: 12px;
+}
+
+.card-row-content {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.card-row-front {
+  font-weight: 600;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-row-back {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.card-row-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Review Mode ─────────────────────────────────── */
+
+.review-counter {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.review-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 32px 24px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  margin: 16px 0;
+  user-select: none;
+}
+
+.review-card-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.review-card-text {
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.review-card-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 24px;
+}
+
+.review-grades {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.review-show-btn {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.review-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 16px;
+}
+
+.review-done-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #22C55E;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin-bottom: 16px;
+}
+
+.review-done-text {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+/* ── Forms ────────────────────────────────────────── */
+
+.card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.form-input,
+.form-textarea {
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  border-color: var(--primary);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ── Modal ────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* ── Color Picker ────────────────────────────────── */
+
+.color-picker {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.color-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.color-swatch:hover {
+  transform: scale(1.15);
+}
+
+.color-swatch.active {
+  border-color: var(--text);
+  transform: scale(1.15);
+}
+
+/* ── FAB ─────────────────────────────────────────── */
+
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-size: 1.75rem;
+  font-weight: 300;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s;
+  z-index: 50;
+}
+
+.fab:hover {
+  background: var(--primary-hover);
+  transform: scale(1.05);
+}
+
+/* ── Toast ────────────────────────────────────────── */
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--bg);
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  animation: toast-in 0.25s ease-out;
+  cursor: pointer;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Utilities ────────────────────────────────────── */
+
+.center-message {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 48px 16px;
+  font-size: 0.95rem;
+}
