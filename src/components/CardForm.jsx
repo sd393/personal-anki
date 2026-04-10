@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createCard, updateCard, deleteCard } from '../api.js';
+import { createCard, updateCard, deleteCard } from '../lib/api.js';
 
 export default function CardForm({ deckId, card, navigate, showToast }) {
   const isEdit = !!card;

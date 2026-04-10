@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getReviewCards, submitReview } from '../api.js';
+import { getDueCards, reviewCard } from '../lib/api.js';
 
 export default function ReviewMode({ deckId, deckName, navigate, showToast }) {
   const [cards, setCards] = useState([]);
@@ -9,7 +9,7 @@ export default function ReviewMode({ deckId, deckName, navigate, showToast }) {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    getReviewCards(deckId)
+    getDueCards(deckId)
       .then((data) => {
         setCards(data);
         setLoading(false);
@@ -24,7 +24,7 @@ export default function ReviewMode({ deckId, deckName, navigate, showToast }) {
 
   const handleGrade = async (grade) => {
     try {
-      await submitReview(cards[index].id, grade);
+      await reviewCard(cards[index].id, grade);
       if (index + 1 >= cards.length) {
         setDone(true);
       } else {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getCards, getDecks, updateDeck, deleteDeck, deleteCard } from '../api.js';
+import { getCards, getDecks, renameDeck, deleteDeck, deleteCard } from '../lib/api.js';
 
 export default function DeckView({ deckId, navigate, showToast }) {
   const [deck, setDeck] = useState(null);
@@ -39,7 +39,7 @@ export default function DeckView({ deckId, navigate, showToast }) {
       return;
     }
     try {
-      await updateDeck(deckId, { name: trimmed });
+      await renameDeck(deckId, trimmed);
       setDeck({ ...deck, name: trimmed });
       showToast('Deck renamed');
     } catch (err) {

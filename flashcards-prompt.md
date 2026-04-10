@@ -1,53 +1,57 @@
 # Flashcard App — Claude Code Prompt
 
-Build me a simple, personal spaced-repetition flashcard web app. This is for my use only — no auth, no multi-user support. I want it deployed so I can use it on both desktop and my phone.
+Build me a simple, personal spaced-repetition flashcard web app. This is for my use only — no auth, no multi-user support. I want to deploy it on Vercel and use Supabase for the database so my cards sync across devices (phone + laptop).
 
 ## Tech Stack
 
 - **Frontend:** React (Vite), single-page app, mobile-first responsive design
-- **Backend:** Express.js with a SQLite database (via `better-sqlite3`) for persistent storage
-- **Deployment-ready:** Give me a single `npm run dev` to start both frontend and backend locally. Structure it so I can easily deploy to a free tier (Railway, Render, Fly.io, etc.)
+- **Database:** Supabase (Postgres). All reads/writes go directly from the frontend using `@supabase/supabase-js` — no backend needed.
+- **Deployment:** Vercel as a static site. No serverless functions, no API routes.
+- **Environment variables:** `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` — set in Vercel's dashboard and `.env.local` for dev.
 
-## Data Model
+## Supabase Schema
 
-SQLite with two tables:
+Generate a `schema.sql` file I can paste into the Supabase SQL editor:
 
 **decks**
-- `id` (text, primary key, UUID)
-- `name` (text)
-- `color` (text, hex color)
-- `created_at` (integer, unix ms)
+- `id` uuid primary key default `gen_random_uuid()`
+- `name` text not null
+- `color` text not null
+- `created_at` timestamptz default `now()`
 
 **cards**
-- `id` (text, primary key, UUID)
-- `deck_id` (text, foreign key → decks.id)
-- `front` (text)
-- `back` (text)
-- `interval` (real, days, default 0)
-- `ease` (real, default 2.5)
-- `repetitions` (integer, default 0)
-- `next_review` (integer, unix ms, default 0)
-- `last_review` (integer, unix ms, nullable)
-- `created_at` (integer, unix ms)
+- `id` uuid primary key default `gen_random_uuid()`
+- `deck_id` uuid references decks(id) on delete cascade
+- `front` text not null
+- `back` text not null
+- `interval_days` real default 0
+- `ease` real default 2.5
+- `repetitions` integer default 0
+- `next_review` timestamptz default `now()`
+- `last_review` timestamptz
+- `created_at` timestamptz default `now()`
 
-## API Endpoints
+Since this is single-user with no auth, disable RLS on both tables. Add a note in the SQL file reminding me to do this in the Supabase dashboard.
 
-REST API, all JSON:
+## Data Access (supabase.js)
 
-- `GET /api/decks` — list all decks with card count and due count
-- `POST /api/decks` — create deck `{ name, color }`
-- `PATCH /api/decks/:id` — update deck (rename, change color) `{ name?, color? }`
-- `DELETE /api/decks/:id` — delete deck and all its cards
-- `GET /api/decks/:id/cards` — list all cards in a deck
-- `POST /api/decks/:id/cards` — create card `{ front, back }`
-- `PATCH /api/cards/:id` — update card `{ front?, back? }`
-- `DELETE /api/cards/:id` — delete card
-- `GET /api/decks/:id/review` — get all due cards (where `next_review <= now`), shuffled
-- `POST /api/cards/:id/review` — submit a review grade `{ grade }` (0=again, 1=good, 2=easy), server calculates new schedule and updates the card
+Create a `src/lib/supabase.js` that initializes the Supabase client, then a `src/lib/api.js` with simple async functions wrapping Supabase queries:
 
-## Spaced Repetition (SM-2, server-side)
+- `getDecks()` — fetch all decks, each with card count and due count (use a Postgres function or fetch cards and count client-side — whichever is simpler)
+- `createDeck(name, color)`
+- `renameDeck(id, name)`
+- `updateDeckColor(id, color)`
+- `deleteDeck(id)` — cascade deletes cards
+- `getCards(deckId)` — all cards in a deck
+- `createCard(deckId, front, back)`
+- `updateCard(id, { front, back })`
+- `deleteCard(id)`
+- `getDueCards(deckId)` — cards where `next_review <= now`, shuffled client-side
+- `reviewCard(id, grade)` — fetch the card, run SM-2 client-side, then update the card with new schedule
 
-Implement this in the `POST /api/cards/:id/review` handler:
+## Spaced Repetition (SM-2, client-side)
+
+Implement in `src/lib/scheduler.js`:
 
 ```
 if grade == 0 (again):
@@ -66,28 +70,28 @@ if grade == 2 (easy):
   ease = min(3.0, ease + 0.15)
   repetitions += 1
 
-next_review = now + interval * 86400000
+next_review = now + interval days
 last_review = now
 ```
 
+Returns an object with the updated fields to pass directly to `supabase.from('cards').update(...)`.
+
 ## UI — Screens & Features
 
-The app has only a few views. Keep the UI minimal and clean — no unnecessary chrome. Mobile-first, works well on phone screens.
+Keep the UI minimal and clean. Mobile-first, works well on phone screens.
 
 ### 1. Home (Deck List)
 - Shows all decks as colored cards
 - Each card shows: deck name, card count, due count
 - If cards are due, show a play button that goes straight to review
 - "New Deck" button at the bottom
-- Export (download all data as JSON) and Import (upload JSON to restore) buttons in the header
 
 ### 2. Deck View
-- Header: back button, deck name (tappable to rename — inline edit or modal), review button with due count
+- Header: back button, deck name (tappable to rename via inline edit), review button with due count
 - "Add Card" button at the top
 - List of all cards showing front/back preview
 - Each card row has edit and delete buttons
 - "Delete Deck" button at the bottom (with confirmation)
-- Ability to rename the deck (tap deck name or an edit icon) — PATCH to `/api/decks/:id`
 
 ### 3. Review Mode
 - Shows one card at a time, front side first
@@ -116,65 +120,34 @@ The app has only a few views. Keep the UI minimal and clean — no unnecessary c
 - Toast notifications for confirmations (card added, deleted, etc.)
 - No external UI library — just CSS. Keep it simple.
 
-## Export/Import
-
-- `GET /api/export` — returns the full database as JSON `{ decks: [...], cards: [...] }`
-- `POST /api/import` — accepts the same format, merges or replaces all data (I'll use replace — wipe and re-insert)
-
 ## File Structure
 
 ```
 flashcards/
-├── server/
-│   ├── index.js          # Express server, serves API + static frontend
-│   ├── db.js             # SQLite setup, migrations, helper queries
-│   └── scheduler.js      # SM-2 algorithm
+├── schema.sql                 # Supabase SQL — paste into SQL editor
 ├── src/
 │   ├── App.jsx
 │   ├── main.jsx
-│   ├── api.js            # fetch wrappers for all API calls
+│   ├── lib/
+│   │   ├── supabase.js        # Supabase client init
+│   │   ├── api.js             # All data access functions
+│   │   └── scheduler.js       # SM-2 algorithm
 │   └── components/
 │       ├── DeckList.jsx
 │       ├── DeckView.jsx
 │       ├── ReviewMode.jsx
-│       ├── CardForm.jsx   # used for both add and edit
+│       ├── CardForm.jsx        # Used for both add and edit
 │       └── Toast.jsx
 ├── index.html
-├── vite.config.js         # proxy /api to Express in dev
+├── vite.config.js
+├── .env.local.example          # Template with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
 ├── package.json
 └── README.md
 ```
 
-## Deployment: Railway
-
-This will be deployed on Railway. Keep it simple:
-
-- SQLite file stored at `/data/flashcards.db` — use the env var `DB_PATH` with fallback to `./data/flashcards.db` for local dev
-- On Railway, I'll attach a persistent volume mounted at `/data` so the DB survives redeploys
-- Create the DB directory automatically if it doesn't exist
-- In production, Express serves the built Vite frontend from `dist/`
-- Listen on `process.env.PORT` (Railway sets this automatically), fallback to `3000` for local dev
-- Add a `Dockerfile` for Railway:
-
-```dockerfile
-FROM node:20-slim
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-ENV NODE_ENV=production
-ENV DB_PATH=/data/flashcards.db
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-**package.json scripts:**
-- `"dev"` — runs Vite dev server + Express concurrently
-- `"build"` — runs `vite build`
-- `"start"` — runs `node server/index.js` (serves API + static `dist/`)
-
 ## Important Notes
 
-- No authentication. Single user. Just me.
-- Keep dependencies minimal: express, better-sqlite3, uuid, vite, react, react-dom, concurrently
+- No authentication. Single user. Just me. Disable RLS.
+- No serverless functions — everything talks to Supabase directly from the browser.
+- Keep dependencies minimal: `@supabase/supabase-js`, `vite`, `react`, `react-dom`
+- README should include: setup steps for Supabase (create project, run schema.sql, disable RLS, copy URL + anon key), local dev, and Vercel deployment.
