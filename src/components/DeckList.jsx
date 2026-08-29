@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getDecks, createDeck } from '../lib/api.js';
+import { getConcepts } from '../lib/problems-api.js';
+import { duePool } from '../lib/problem-scheduler.js';
 
 const COLORS = [
   '#F87171', '#FB923C', '#FBBF24', '#A3E635',
@@ -12,6 +14,7 @@ export default function DeckList({ navigate, showToast }) {
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState(COLORS[0]);
+  const [problemsDue, setProblemsDue] = useState(0);
 
   const loadDecks = async () => {
     try {
@@ -21,7 +24,11 @@ export default function DeckList({ navigate, showToast }) {
     }
   };
 
-  useEffect(() => { loadDecks(); }, []);
+  useEffect(() => {
+    loadDecks();
+    // Tolerate a missing concepts table (schema-problems.sql not run yet)
+    getConcepts().then((c) => setProblemsDue(duePool(c).length)).catch(() => {});
+  }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -43,6 +50,14 @@ export default function DeckList({ navigate, showToast }) {
       <header className="header">
         <h1 className="header-title" style={{ flex: 1 }}>Flashcards</h1>
       </header>
+
+      <div className="deck-card problems-entry" onClick={() => navigate('problems')}>
+        <div className="deck-card-name">Problem Review</div>
+        <div className="deck-card-stats">
+          Concept-scheduled problems
+          {problemsDue > 0 && <span className="deck-card-due"> &middot; {problemsDue} concept{problemsDue === 1 ? '' : 's'} due</span>}
+        </div>
+      </div>
 
       {decks.length === 0 && !showNew ? (
         <div className="center-message">No decks yet. Create one to get started!</div>

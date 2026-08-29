@@ -3,6 +3,9 @@ import DeckList from './components/DeckList.jsx';
 import DeckView from './components/DeckView.jsx';
 import ReviewMode from './components/ReviewMode.jsx';
 import CardForm from './components/CardForm.jsx';
+import ProblemDashboard from './components/ProblemDashboard.jsx';
+import ProblemSession from './components/ProblemSession.jsx';
+import ProblemForm from './components/ProblemForm.jsx';
 import Toast from './components/Toast.jsx';
 
 export default function App() {
@@ -33,6 +36,15 @@ export default function App() {
       break;
     case 'editCard':
       content = <CardForm deckId={view.deckId} card={view.card} navigate={navigate} showToast={showToast} />;
+      break;
+    case 'problems':
+      content = <ProblemDashboard navigate={navigate} showToast={showToast} />;
+      break;
+    case 'problemSession':
+      content = <ProblemSession navigate={navigate} showToast={showToast} />;
+      break;
+    case 'problemForm':
+      content = <ProblemForm conceptSlug={view.conceptSlug} problem={view.problem} navigate={navigate} showToast={showToast} />;
       break;
     default:
       content = <DeckList navigate={navigate} showToast={showToast} />;
