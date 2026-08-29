@@ -1110,3 +1110,15 @@ select.form-input { appearance: auto; }
   padding: 8px 12px;
   margin-top: 12px;
 }
+
+.generating-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border);
+  border-top-color: #7C3AED;
+  border-radius: 50%;
+  margin-bottom: 16px;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

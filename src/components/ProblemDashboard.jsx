@@ -7,7 +7,7 @@ import {
   getProblems,
   deleteProblem,
 } from '../lib/problems-api.js';
-import { generateProblemsForConcept, generateForConcepts } from '../lib/generate-api.js';
+import { generateProblemsForConcept } from '../lib/generate-api.js';
 import { duePool, buildSession } from '../lib/problem-scheduler.js';
 import { SECTIONS } from '../data/concept-graph.js';
 
@@ -91,20 +91,6 @@ export default function ProblemDashboard({ navigate, showToast }) {
     }
   };
 
-  const handleGenerateMissing = async (missingConcepts) => {
-    setGenerating((g) => ({ ...g, __missing__: true }));
-    try {
-      const { inserted, failed } = await generateForConcepts(missingConcepts, { count: 1 });
-      if (inserted.length > 0) notifyGenerated(inserted);
-      if (failed.length > 0) showToast('Failed for: ' + failed.join(', '));
-      setCounts(await getProblemCounts());
-    } catch (err) {
-      showToast('Error: ' + err.message);
-    } finally {
-      setGenerating((g) => ({ ...g, __missing__: false }));
-    }
-  };
-
   const handleDeleteProblem = async (id) => {
     if (!confirm('Delete this problem?')) return;
     try {
@@ -157,19 +143,7 @@ export default function ProblemDashboard({ navigate, showToast }) {
             <div className="session-card-sub">
               Session ready: {preview.entries.length} problem{preview.entries.length === 1 ? '' : 's'} covering{' '}
               {preview.entries.length + preview.entries.reduce((n, e) => n + e.covered.length, 0)} concepts
-            </div>
-          )}
-          {preview.missing.length > 0 && (
-            <div className="session-card-warn">
-              No fresh problems for: {preview.missing.map((s) => bySlug[s]?.name || s).join(', ')}
-              <button
-                className="btn btn-sm btn-ai"
-                style={{ marginTop: 6, display: 'block' }}
-                disabled={generating.__missing__}
-                onClick={() => handleGenerateMissing(preview.missing.map((s) => bySlug[s]).filter(Boolean))}
-              >
-                {generating.__missing__ ? 'Generating… (can take a few minutes)' : `✦ Generate with AI (${preview.missing.length})`}
-              </button>
+              {preview.toGenerate > 0 && ` · ${preview.toGenerate} AI-generated at start`}
             </div>
           )}
         </div>
@@ -183,8 +157,9 @@ export default function ProblemDashboard({ navigate, showToast }) {
       </div>
 
       <p className="session-note">
-        First time: classify what you remember — tap a state on each concept (that's the diagnostic).
-        Retained → 30d, Shaky → 7d, Forgotten → due now with a refresher.
+        Sessions generate their own problems with AI — just hit Start. Adjust a concept's state
+        anytime (Retained → 30d, Shaky → 7d, Forgotten → due now with a refresher); pre-generating
+        per concept below skips the wait at session start.
       </p>
 
       {SECTIONS.map(({ bucket, section, slugs }) => (

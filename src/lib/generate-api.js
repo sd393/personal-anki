@@ -52,15 +52,3 @@ export async function generateProblemsForConcept(concept, { count = 2 } = {}) {
   if (error) throw error;
   return data;
 }
-
-/** Generate one problem each for several concepts, in parallel. */
-export async function generateForConcepts(concepts, { count = 1 } = {}) {
-  const results = await Promise.allSettled(
-    concepts.map((c) => generateProblemsForConcept(c, { count }))
-  );
-  const inserted = results.filter((r) => r.status === 'fulfilled').flatMap((r) => r.value);
-  const failed = results
-    .map((r, i) => (r.status === 'rejected' ? concepts[i].name : null))
-    .filter(Boolean);
-  return { inserted, failed };
-}

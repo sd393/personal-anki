@@ -154,18 +154,20 @@ export function pickProblem(concept, freshProblems) {
 /**
  * §5 — Greedy session construction.
  *
+ * Concepts are chosen purely by coverage of the due pool; a banked fresh
+ * problem is used when one exists, otherwise `problem` is null and the
+ * session screen AI-generates one before the session starts.
+ *
  * @param {Array} concepts            all concept rows
  * @param {Object} freshByConcept     slug -> array of fresh problem rows
- * @returns {{ entries: [{concept, problem, covered}], missing: string[], overflow: string[] }}
+ * @returns {{ entries: [{concept, problem|null, covered}], overflow: string[], toGenerate: number }}
  *   entries  — problems for this session, shuffled, never labeled in the UI
- *   missing  — due concepts with no fresh problem in the bank (need authoring)
- *   overflow — due concepts beyond the session cap (roll to next session)
+ *   overflow — due concepts beyond the session cap (roll to the next session)
  */
 export function buildSession(concepts, freshByConcept, now = new Date(), { cap = 3, horizonDays = 3 } = {}) {
-  let pool = duePool(concepts, now, horizonDays);
+  const pool = duePool(concepts, now, horizonDays);
   const poolSlugs = new Set(pool.map((c) => c.slug));
   const entries = [];
-  const missing = [];
 
   const coverage = (c) => {
     let n = 0;
@@ -174,10 +176,7 @@ export function buildSession(concepts, freshByConcept, now = new Date(), { cap =
   };
 
   while (poolSlugs.size > 0 && entries.length < cap) {
-    // Candidates that can actually carry a problem.
-    const candidates = pool.filter(
-      (c) => poolSlugs.has(c.slug) && (freshByConcept[c.slug] || []).length > 0
-    );
+    const candidates = pool.filter((c) => poolSlugs.has(c.slug));
     if (candidates.length === 0) break;
 
     // Most coverage of other due concepts; tie-break most overdue.
@@ -187,7 +186,7 @@ export function buildSession(concepts, freshByConcept, now = new Date(), { cap =
       return new Date(a.due) - new Date(b.due);
     });
     const chosen = candidates[0];
-    const problem = pickProblem(chosen, freshByConcept[chosen.slug]);
+    const problem = pickProblem(chosen, freshByConcept[chosen.slug]); // null → generate
 
     const covered = (chosen.encompasses || [])
       .filter((enc) => poolSlugs.has(enc.slug))
@@ -198,13 +197,7 @@ export function buildSession(concepts, freshByConcept, now = new Date(), { cap =
     for (const slug of covered) poolSlugs.delete(slug);
   }
 
-  // Whatever is left either has no fresh problems (missing) or overflowed the cap.
-  const leftovers = pool.filter((c) => poolSlugs.has(c.slug));
-  const overflow = [];
-  for (const c of leftovers) {
-    if ((freshByConcept[c.slug] || []).length === 0) missing.push(c.slug);
-    else overflow.push(c.slug);
-  }
+  const overflow = pool.filter((c) => poolSlugs.has(c.slug)).map((c) => c.slug);
 
   // Interleave: random order, never labeled with the concept.
   for (let i = entries.length - 1; i > 0; i--) {
@@ -212,7 +205,7 @@ export function buildSession(concepts, freshByConcept, now = new Date(), { cap =
     [entries[i], entries[j]] = [entries[j], entries[i]];
   }
 
-  return { entries, missing, overflow };
+  return { entries, overflow, toGenerate: entries.filter((e) => !e.problem).length };
 }
 
 /** Grading helper: suggested outcome from timing (§6). */

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { getSession, recordAttempt } from '../lib/problems-api.js';
+import { generateProblemsForConcept } from '../lib/generate-api.js';
 import { timingVerdict } from '../lib/problem-scheduler.js';
 import Rich from './Rich.jsx';
 
@@ -23,18 +24,47 @@ export default function ProblemSession({ navigate, showToast }) {
   const [saving, setSaving] = useState(false);
   const startRef = useRef(null);
   const secondsRef = useRef(0);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    getSession()
-      .then((s) => {
+    // Guard against React StrictMode's dev-mode double effect run — without
+    // this, every generation fires twice and double-bills the API.
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    (async () => {
+      try {
+        const s = await getSession();
+        if (s.entries.length === 0) {
+          setSession(s);
+          setPhase('empty');
+          return;
+        }
+
+        // AI-generate a fresh problem for every chosen concept that has
+        // none banked, before the session starts (the normal case).
+        const needed = s.entries.filter((e) => !e.problem);
+        if (needed.length > 0) {
+          setPhase('generating');
+          const results = await Promise.allSettled(
+            needed.map((e) => generateProblemsForConcept(e.concept, { count: 1 }))
+          );
+          const failed = [];
+          results.forEach((r, i) => {
+            if (r.status === 'fulfilled' && r.value[0]) needed[i].problem = r.value[0];
+            else failed.push(needed[i].concept.name);
+          });
+          s.entries = s.entries.filter((e) => e.problem);
+          if (failed.length > 0) showToast('Generation failed for: ' + failed.join(', '));
+        }
+
         setSession(s);
         if (s.entries.length === 0) setPhase('empty');
         else setPhase(s.entries[0].concept.state === 'forgotten' ? 'refresher' : 'attempt');
-      })
-      .catch((err) => {
+      } catch (err) {
         showToast('Failed to load session: ' + err.message);
         setPhase('empty');
-      });
+      }
+    })();
   }, [showToast]);
 
   // Timer runs during the attempt
@@ -101,6 +131,19 @@ export default function ProblemSession({ navigate, showToast }) {
     return <div className="screen">{header('Session')}<div className="center-message">Building session...</div></div>;
   }
 
+  if (phase === 'generating') {
+    return (
+      <div className="screen">
+        {header('Session')}
+        <div className="review-done">
+          <div className="generating-spinner" />
+          <p className="review-done-text">Generating fresh problems with AI…</p>
+          <p className="session-note">Usually a minute or two. Each problem is brand new — never seen before.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === 'empty') {
     return (
       <div className="screen">
@@ -108,12 +151,6 @@ export default function ProblemSession({ navigate, showToast }) {
         <div className="review-done">
           <div className="review-done-icon">&#10003;</div>
           <p className="review-done-text">Nothing due right now.</p>
-          {session?.missing.length > 0 && (
-            <p className="session-note">
-              {session.missing.length} due concept{session.missing.length === 1 ? ' has' : 's have'} no
-              fresh problems in the bank — add some from the dashboard.
-            </p>
-          )}
           <button className="btn btn-primary" onClick={() => navigate('problems')}>Back to Problems</button>
         </div>
       </div>
