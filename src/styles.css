@@ -1122,3 +1122,130 @@ select.form-input { appearance: auto; }
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Topic selection ──────────────────────────────── */
+
+.topic-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.select-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.select-dot-on {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.concept-selected {
+  outline: 2px solid var(--primary);
+}
+
+.select-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 10px 16px;
+  z-index: 60;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+}
+
+.select-bar-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Practice ─────────────────────────────────────── */
+
+.btn-practice {
+  background: #0D9488;
+  color: #fff;
+}
+
+.btn-practice:hover:not(:disabled) { background: #0F766E; }
+
+/* ── History ──────────────────────────────────────── */
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.history-row {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border-left: 4px solid var(--border);
+}
+
+.history-row.outcome-clean { border-left-color: #22C55E; }
+.history-row.outcome-weak  { border-left-color: #F59E0B; }
+.history-row.outcome-fail  { border-left-color: #EF4444; }
+
+.history-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+
+.history-row-main:hover { background: rgba(128,128,128,0.05); }
+
+.history-outcome {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.history-outcome-clean { color: #16A34A; }
+.history-outcome-weak  { color: #D97706; }
+.history-outcome-fail  { color: #DC2626; }
+
+.history-concept {
+  font-size: 0.9rem;
+  font-weight: 600;
+  flex: 1;
+  min-width: 140px;
+}
+
+.history-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.history-detail {
+  border-top: 1px solid var(--border);
+  padding: 14px;
+}

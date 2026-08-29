@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 // One concept per request keeps each function call's latency bounded;
 // the client fans out across concepts.
-export const MAX_COUNT = 3;
+export const MAX_COUNT = 4;
 export const MAX_AVOID = 12;
 export const MAX_AVOID_CHARS = 280;
 

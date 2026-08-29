@@ -12,7 +12,7 @@ const fmtTime = (s) => `${Math.floor(s / 60)}m ${String(Math.round(s % 60)).padS
  *   refresher (forgotten concepts only) → attempt → graded → post-mortem
  *   (fails only) → result → next.
  */
-export default function ProblemSession({ navigate, showToast }) {
+export default function ProblemSession({ navigate, showToast, slugs = null }) {
   const [session, setSession] = useState(null);
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState('loading');
@@ -33,7 +33,7 @@ export default function ProblemSession({ navigate, showToast }) {
     loadedRef.current = true;
     (async () => {
       try {
-        const s = await getSession();
+        const s = await getSession(slugs);
         if (s.entries.length === 0) {
           setSession(s);
           setPhase('empty');

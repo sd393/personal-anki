@@ -34,7 +34,9 @@ export default function ProblemDashboard({ navigate, showToast }) {
   const [expanded, setExpanded] = useState(null);
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState({}); // slug -> true, or '__missing__'
+  const [generating, setGenerating] = useState({}); // slug -> true
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState([]);
 
   const load = useCallback(async () => {
     try {
@@ -58,6 +60,10 @@ export default function ProblemDashboard({ navigate, showToast }) {
     try {
       setProblems(await getProblems(slug));
     } catch { setProblems([]); }
+  };
+
+  const toggleSelected = (slug) => {
+    setSelected((sel) => (sel.includes(slug) ? sel.filter((s) => s !== slug) : [...sel, slug]));
   };
 
   const handleState = async (slug, state) => {
@@ -131,7 +137,7 @@ export default function ProblemDashboard({ navigate, showToast }) {
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 4L7 10L13 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
         <h1 className="header-title">Problems</h1>
-        <div style={{ width: 36 }} />
+        <button className="btn btn-sm btn-secondary" onClick={() => navigate('history')}>History</button>
       </header>
 
       <div className="session-card">
@@ -156,10 +162,24 @@ export default function ProblemDashboard({ navigate, showToast }) {
         </button>
       </div>
 
+      <div className="topic-toolbar">
+        <button
+          className={`btn btn-sm ${selectMode ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => { setSelectMode(!selectMode); if (selectMode) setSelected([]); }}
+        >
+          {selectMode ? 'Cancel selection' : 'Choose topics for a session'}
+        </button>
+        {selectMode && (
+          <span className="session-note" style={{ margin: 0 }}>
+            Tap topics to select them, then start below.
+          </span>
+        )}
+      </div>
+
       <p className="session-note">
-        Sessions generate their own problems with AI — just hit Start. Adjust a concept's state
-        anytime (Retained → 30d, Shaky → 7d, Forgotten → due now with a refresher); pre-generating
-        per concept below skips the wait at session start.
+        Sessions pull from the problem bank instantly and only generate with AI when a topic's
+        bank is empty. Tap a topic to expand it — practice it directly, adjust its state, or
+        pre-generate problems.
       </p>
 
       {SECTIONS.map(({ bucket, section, slugs }) => (
@@ -173,10 +193,12 @@ export default function ProblemDashboard({ navigate, showToast }) {
             const meta = STATE_META[c.state] || STATE_META.unknown;
             const fresh = counts[slug]?.fresh || 0;
             const isOpen = expanded === slug;
+            const isSelected = selected.includes(slug);
             return (
-              <div key={slug} className={`concept-row ${isOpen ? 'open' : ''}`}>
-                <div className="concept-row-main" onClick={() => toggleExpand(slug)}>
+              <div key={slug} className={`concept-row ${isOpen ? 'open' : ''} ${selectMode && isSelected ? 'concept-selected' : ''}`}>
+                <div className="concept-row-main" onClick={() => (selectMode ? toggleSelected(slug) : toggleExpand(slug))}>
                   <div className="concept-row-left">
+                    {selectMode && <span className={`select-dot ${isSelected ? 'select-dot-on' : ''}`}>{isSelected ? '✓' : ''}</span>}
                     <span className={`chip ${meta.cls}`}>{meta.label}</span>
                     <span className="concept-name">{c.name}</span>
                   </div>
@@ -209,6 +231,9 @@ export default function ProblemDashboard({ navigate, showToast }) {
                       </div>
                     )}
                     <div className="concept-actions">
+                      <button className="btn btn-sm btn-practice" onClick={() => navigate('practice', { concept: c })}>
+                        &#9654; Practice this topic
+                      </button>
                       <button
                         className="btn btn-sm btn-ai"
                         disabled={!!generating[slug]}
@@ -242,6 +267,19 @@ export default function ProblemDashboard({ navigate, showToast }) {
           })}
         </div>
       ))}
+
+      {selectMode && selected.length > 0 && (
+        <div className="select-bar">
+          <span className="select-bar-count">{selected.length} topic{selected.length === 1 ? '' : 's'} selected</span>
+          <button className="btn btn-sm btn-secondary" onClick={() => setSelected([])}>Clear</button>
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={() => navigate('problemSession', { slugs: selected })}
+          >
+            Start session
+          </button>
+        </div>
+      )}
     </div>
   );
 }

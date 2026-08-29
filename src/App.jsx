@@ -6,6 +6,8 @@ import CardForm from './components/CardForm.jsx';
 import ProblemDashboard from './components/ProblemDashboard.jsx';
 import ProblemSession from './components/ProblemSession.jsx';
 import ProblemForm from './components/ProblemForm.jsx';
+import PracticeMode from './components/PracticeMode.jsx';
+import History from './components/History.jsx';
 import Toast from './components/Toast.jsx';
 
 export default function App() {
@@ -41,7 +43,13 @@ export default function App() {
       content = <ProblemDashboard navigate={navigate} showToast={showToast} />;
       break;
     case 'problemSession':
-      content = <ProblemSession navigate={navigate} showToast={showToast} />;
+      content = <ProblemSession navigate={navigate} showToast={showToast} slugs={view.slugs || null} />;
+      break;
+    case 'practice':
+      content = <PracticeMode concept={view.concept} navigate={navigate} showToast={showToast} />;
+      break;
+    case 'history':
+      content = <History navigate={navigate} showToast={showToast} />;
       break;
     case 'problemForm':
       content = <ProblemForm conceptSlug={view.conceptSlug} problem={view.problem} navigate={navigate} showToast={showToast} />;

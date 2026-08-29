@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS attempts (
   answer_given text,
   seconds integer,
   revealed_early boolean NOT NULL DEFAULT false,
+  mode text NOT NULL DEFAULT 'session',  -- session | practice (practice doesn't touch scheduling)
   created_at timestamptz DEFAULT now()
 );
 

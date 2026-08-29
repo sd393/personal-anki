@@ -102,12 +102,13 @@ export async function deleteProblem(id) {
 // ── Session ────────────────────────────────────────
 
 /**
- * Build today's session: due concepts within 3 days, greedy encompass
- * coverage, ≤3 problems, shuffled (spec §5).
+ * Build today's session: due concepts within 3 days (or, when `slugs` is
+ * given, exactly the user-chosen topics), greedy encompass coverage,
+ * ≤3 problems, shuffled (spec §5).
  */
-export async function getSession() {
+export async function getSession(slugs = null) {
   const concepts = await getConcepts();
-  const pool = duePool(concepts);
+  const pool = slugs ? concepts.filter((c) => slugs.includes(c.slug)) : duePool(concepts);
 
   const freshByConcept = {};
   if (pool.length > 0) {
@@ -120,8 +121,22 @@ export async function getSession() {
     for (const p of problems) (freshByConcept[p.concept_slug] ||= []).push(p);
   }
 
-  const session = buildSession(concepts, freshByConcept);
+  const session = buildSession(concepts, freshByConcept, new Date(), { onlySlugs: slugs });
   return { ...session, concepts, dueCount: pool.length };
+}
+
+/**
+ * Practice mode: next fresh banked problem for one concept, excluding ones
+ * already worked this practice run. Returns null when the bank is empty
+ * (caller generates on demand).
+ */
+export async function getPracticeProblem(conceptSlug, excludeIds = []) {
+  let q = supabase.from('problems').select('*').eq('concept_slug', conceptSlug).eq('status', 'fresh');
+  if (excludeIds.length > 0) q = q.not('id', 'in', `(${excludeIds.join(',')})`);
+  const { data, error } = await q;
+  if (error) throw error;
+  if (!data || data.length === 0) return null;
+  return data[Math.floor(Math.random() * data.length)];
 }
 
 // ── Grading ────────────────────────────────────────
@@ -132,9 +147,12 @@ export async function getSession() {
  * weak  → repeat interval, no trickle-down;
  * fail  → post-mortem culprit demoted, tested concept halved if blocked.
  *
+ * mode 'practice' records the attempt and retires the problem but leaves
+ * the review schedule untouched.
+ *
  * Returns a human-readable list of scheduling changes for the UI.
  */
-export async function recordAttempt({ problem, concept, outcome, culpritSlug, answerGiven, seconds, revealedEarly }) {
+export async function recordAttempt({ problem, concept, outcome, culpritSlug, answerGiven, seconds, revealedEarly, mode = 'session' }) {
   const changes = [];
 
   const { error: attErr } = await supabase.from('attempts').insert({
@@ -145,6 +163,7 @@ export async function recordAttempt({ problem, concept, outcome, culpritSlug, an
     answer_given: answerGiven || null,
     seconds: seconds || null,
     revealed_early: !!revealedEarly,
+    mode,
   });
   if (attErr) throw attErr;
 
@@ -154,6 +173,8 @@ export async function recordAttempt({ problem, concept, outcome, culpritSlug, an
     .update({ status: 'used', used_at: new Date().toISOString() })
     .eq('id', problem.id);
   if (probErr) throw probErr;
+
+  if (mode === 'practice') return changes;
 
   const concepts = await getConcepts();
   const bySlug = Object.fromEntries(concepts.map((c) => [c.slug, c]));
@@ -196,12 +217,13 @@ export async function recordAttempt({ problem, concept, outcome, culpritSlug, an
   return changes;
 }
 
-export async function getRecentAttempts(limit = 20) {
+/** History: past attempts with their full problems, newest first. */
+export async function getHistory(limit = 50, offset = 0) {
   const { data, error } = await supabase
     .from('attempts')
-    .select('*')
+    .select('*, problems(*)')
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
   if (error) throw error;
   return data;
 }

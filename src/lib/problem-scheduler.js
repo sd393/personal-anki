@@ -164,8 +164,12 @@ export function pickProblem(concept, freshProblems) {
  *   entries  — problems for this session, shuffled, never labeled in the UI
  *   overflow — due concepts beyond the session cap (roll to the next session)
  */
-export function buildSession(concepts, freshByConcept, now = new Date(), { cap = 3, horizonDays = 3 } = {}) {
-  const pool = duePool(concepts, now, horizonDays);
+export function buildSession(concepts, freshByConcept, now = new Date(), { cap = 3, horizonDays = 3, onlySlugs = null } = {}) {
+  // onlySlugs: user-chosen topics — include them regardless of state or due
+  // date; otherwise the pool is whatever the schedule says is due.
+  const pool = onlySlugs
+    ? concepts.filter((c) => onlySlugs.includes(c.slug))
+    : duePool(concepts, now, horizonDays);
   const poolSlugs = new Set(pool.map((c) => c.slug));
   const entries = [];
 
