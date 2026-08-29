@@ -175,6 +175,12 @@ export default function ProblemSession({ navigate, showToast }) {
           {entry.problem.diagram_svg && (
             <div className="problem-diagram" dangerouslySetInnerHTML={{ __html: entry.problem.diagram_svg }} />
           )}
+          {entry.problem.diagram_asy && !entry.problem.diagram_svg && (
+            <div className="diagram-pending">
+              This problem has a diagram that isn't compiled yet — run{' '}
+              <code>node scripts/compile-diagrams.mjs</code> and reload.
+            </div>
+          )}
         </div>
         <div className="answer-bar">
           <input

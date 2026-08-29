@@ -7,6 +7,7 @@ import {
   getProblems,
   deleteProblem,
 } from '../lib/problems-api.js';
+import { generateProblemsForConcept, generateForConcepts } from '../lib/generate-api.js';
 import { duePool, buildSession } from '../lib/problem-scheduler.js';
 import { SECTIONS } from '../data/concept-graph.js';
 
@@ -33,6 +34,7 @@ export default function ProblemDashboard({ navigate, showToast }) {
   const [expanded, setExpanded] = useState(null);
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState({}); // slug -> true, or '__missing__'
 
   const load = useCallback(async () => {
     try {
@@ -64,6 +66,42 @@ export default function ProblemDashboard({ navigate, showToast }) {
       setConcepts(concepts.map((c) => (c.slug === slug ? updated : c)));
     } catch (err) {
       showToast('Error: ' + err.message);
+    }
+  };
+
+  const notifyGenerated = (inserted) => {
+    const withDiagrams = inserted.filter((p) => p.diagram_asy && !p.diagram_svg).length;
+    showToast(
+      `Generated ${inserted.length} problem${inserted.length === 1 ? '' : 's'}` +
+        (withDiagrams > 0 ? ` — ${withDiagrams} need${withDiagrams === 1 ? 's' : ''} diagram compile (npm script)` : '')
+    );
+  };
+
+  const handleGenerate = async (concept) => {
+    setGenerating((g) => ({ ...g, [concept.slug]: true }));
+    try {
+      const inserted = await generateProblemsForConcept(concept, { count: 2 });
+      notifyGenerated(inserted);
+      setCounts(await getProblemCounts());
+      if (expanded === concept.slug) setProblems(await getProblems(concept.slug));
+    } catch (err) {
+      showToast('Error: ' + err.message);
+    } finally {
+      setGenerating((g) => ({ ...g, [concept.slug]: false }));
+    }
+  };
+
+  const handleGenerateMissing = async (missingConcepts) => {
+    setGenerating((g) => ({ ...g, __missing__: true }));
+    try {
+      const { inserted, failed } = await generateForConcepts(missingConcepts, { count: 1 });
+      if (inserted.length > 0) notifyGenerated(inserted);
+      if (failed.length > 0) showToast('Failed for: ' + failed.join(', '));
+      setCounts(await getProblemCounts());
+    } catch (err) {
+      showToast('Error: ' + err.message);
+    } finally {
+      setGenerating((g) => ({ ...g, __missing__: false }));
     }
   };
 
@@ -124,6 +162,14 @@ export default function ProblemDashboard({ navigate, showToast }) {
           {preview.missing.length > 0 && (
             <div className="session-card-warn">
               No fresh problems for: {preview.missing.map((s) => bySlug[s]?.name || s).join(', ')}
+              <button
+                className="btn btn-sm btn-ai"
+                style={{ marginTop: 6, display: 'block' }}
+                disabled={generating.__missing__}
+                onClick={() => handleGenerateMissing(preview.missing.map((s) => bySlug[s]).filter(Boolean))}
+              >
+                {generating.__missing__ ? 'Generating… (can take a few minutes)' : `✦ Generate with AI (${preview.missing.length})`}
+              </button>
             </div>
           )}
         </div>
@@ -187,9 +233,18 @@ export default function ProblemDashboard({ navigate, showToast }) {
                         interval {Math.round(c.interval_days)}d · strength {c.strength}
                       </div>
                     )}
-                    <button className="btn btn-sm btn-primary" style={{ marginTop: 10 }} onClick={() => navigate('problemForm', { conceptSlug: slug })}>
-                      + Add problem
-                    </button>
+                    <div className="concept-actions">
+                      <button
+                        className="btn btn-sm btn-ai"
+                        disabled={!!generating[slug]}
+                        onClick={() => handleGenerate(c)}
+                      >
+                        {generating[slug] ? 'Generating…' : '✦ Generate 2 with AI'}
+                      </button>
+                      <button className="btn btn-sm btn-primary" onClick={() => navigate('problemForm', { conceptSlug: slug })}>
+                        + Add manually
+                      </button>
+                    </div>
                     {problems.length > 0 && (
                       <div className="problem-list">
                         {problems.map((p) => (

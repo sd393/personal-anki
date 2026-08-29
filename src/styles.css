@@ -1085,3 +1085,28 @@ body {
 }
 
 select.form-input { appearance: auto; }
+
+/* ── AI generation ────────────────────────────────── */
+
+.btn-ai {
+  background: #7C3AED;
+  color: #fff;
+}
+
+.btn-ai:hover:not(:disabled) { background: #6D28D9; }
+
+.concept-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.diagram-pending {
+  font-size: 0.8rem;
+  color: #B45309;
+  background: #FEF3C7;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-top: 12px;
+}
