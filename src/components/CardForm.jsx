@@ -1,11 +1,18 @@
-import { useState } from 'react';
-import { createCard, updateCard, deleteCard } from '../lib/api.js';
+import { useState, useEffect } from 'react';
+import { createCard, updateCard, deleteCard, getDecks } from '../lib/api.js';
 
 export default function CardForm({ deckId, card, navigate, showToast }) {
   const isEdit = !!card;
   const [front, setFront] = useState(card?.front || '');
   const [back, setBack] = useState(card?.back || '');
+  const [targetDeckId, setTargetDeckId] = useState(card?.deck_id || deckId);
+  const [decks, setDecks] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isEdit) return;
+    getDecks().then(setDecks).catch(() => {});
+  }, [isEdit]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -13,9 +20,10 @@ export default function CardForm({ deckId, card, navigate, showToast }) {
     setLoading(true);
     try {
       if (isEdit) {
-        await updateCard(card.id, { front: front.trim(), back: back.trim() });
-        showToast('Card updated');
-        navigate('deck', { deckId });
+        const moved = targetDeckId !== card.deck_id;
+        await updateCard(card.id, { front: front.trim(), back: back.trim(), deck_id: targetDeckId });
+        showToast(moved ? `Card moved to "${decks.find((d) => d.id === targetDeckId)?.name || 'deck'}"` : 'Card updated');
+        navigate('deck', { deckId: targetDeckId });
       } else {
         await createCard(deckId, front.trim(), back.trim());
         showToast('Card added');
@@ -55,6 +63,16 @@ export default function CardForm({ deckId, card, navigate, showToast }) {
       </header>
 
       <form className="card-form" onSubmit={handleSubmit}>
+        {isEdit && decks.length > 1 && (
+          <label className="form-label">
+            Deck
+            <select className="form-input" value={targetDeckId} onChange={(e) => setTargetDeckId(e.target.value)}>
+              {decks.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="form-label">
           Front
           <textarea

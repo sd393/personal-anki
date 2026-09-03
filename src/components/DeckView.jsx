@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { getCards, getDecks, renameDeck, deleteDeck, deleteCard } from '../lib/api.js';
+import { getCards, getDecks, renameDeck, deleteDeck, deleteCard, updateCard } from '../lib/api.js';
 
 export default function DeckView({ deckId, navigate, showToast }) {
   const [deck, setDeck] = useState(null);
+  const [allDecks, setAllDecks] = useState([]);
   const [cards, setCards] = useState([]);
   const [editing, setEditing] = useState(false);
   const [deckName, setDeckName] = useState('');
+  const [movingCard, setMovingCard] = useState(null);
   const nameRef = useRef(null);
 
   const loadData = async () => {
@@ -16,6 +18,7 @@ export default function DeckView({ deckId, navigate, showToast }) {
         setDeck(d);
         setDeckName(d.name);
       }
+      setAllDecks(decks);
       setCards(cardList);
     } catch (err) {
       showToast('Error loading deck');
@@ -56,6 +59,18 @@ export default function DeckView({ deckId, navigate, showToast }) {
       navigate('home');
     } catch (err) {
       showToast('Error deleting deck');
+    }
+  };
+
+  const handleMoveCard = async (targetDeck) => {
+    const card = movingCard;
+    setMovingCard(null);
+    try {
+      await updateCard(card.id, { deck_id: targetDeck.id });
+      setCards(cards.filter((c) => c.id !== card.id));
+      showToast(`Moved to "${targetDeck.name}"`);
+    } catch (err) {
+      showToast('Error moving card');
     }
   };
 
@@ -121,6 +136,9 @@ export default function DeckView({ deckId, navigate, showToast }) {
                 <div className="card-row-back">{card.back}</div>
               </div>
               <div className="card-row-actions">
+                <button className="btn-icon btn-sm" title="Move to another deck" onClick={() => setMovingCard(card)}>
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M13 3l4 4-4 4M17 7H7M7 17l-4-4 4-4M3 13h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
                 <button className="btn-icon btn-sm" onClick={() => navigate('editCard', { deckId, card })}>
                   <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M10 1.5l2.5 2.5M1.5 12.5l.5-2.5L9.5 2.5 12 5l-7.5 7.5-2.5.5z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </button>
@@ -136,6 +154,33 @@ export default function DeckView({ deckId, navigate, showToast }) {
       <button className="btn btn-danger-text btn-block" onClick={handleDeleteDeck} style={{ marginTop: 24 }}>
         Delete Deck
       </button>
+
+      {movingCard && (
+        <div className="modal-overlay" onClick={() => setMovingCard(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">Move card to…</h2>
+            <p className="move-card-preview">{movingCard.front}</p>
+            <div className="deck-pick-list">
+              {allDecks.filter((d) => d.id !== deckId).length === 0 ? (
+                <p className="session-note">No other decks — create one first.</p>
+              ) : (
+                allDecks
+                  .filter((d) => d.id !== deckId)
+                  .map((d) => (
+                    <button key={d.id} className="deck-pick-row" onClick={() => handleMoveCard(d)}>
+                      <span className="deck-pick-dot" style={{ background: d.color }} />
+                      <span className="deck-pick-name">{d.name}</span>
+                      <span className="deck-pick-count">{d.card_count} cards</span>
+                    </button>
+                  ))
+              )}
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setMovingCard(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
